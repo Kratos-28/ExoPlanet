@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -11,10 +12,11 @@ import (
 
 func main() {
 
+	fmt.Printf("Started application at port :8080 \n")
 	r := mux.NewRouter()
 	r.HandleFunc("/exoplanets", handlers.AddExoPlanet).Methods("POST")
-	// r.HandleFunc("/exoplanets", handlers.ListExoPlanet).Methods("GET")
-	// r.HandleFunc("/exoplanets/{id}", handlers.GetExoPlanetByID).Methods("GET")
+	r.HandleFunc("/exoplanets", handlers.ListExoPlanets).Methods("GET")
+	r.HandleFunc("/exoplanets/{id}", handlers.GetExoPlanetByID).Methods("GET")
 	// r.HandleFunc("/exoplanets/{id}", handlers.UpdateExoPlanet).Methods("PUT")
 	// r.HandleFunc("/exoplanets/{id}", handlers.DeleteExoPlanet).Methods("DELETE")
 	// r.HandleFunc("/exoplanets/{id}", handlers.FuelEstimation).Methods("GET")
