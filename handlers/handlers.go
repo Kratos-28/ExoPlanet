@@ -3,8 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/Kratos-28/ExoPlanet/models"
+	"github.com/Kratos-28/ExoPlanet/utils"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
@@ -125,4 +127,31 @@ func DeleteExoPlanet(w http.ResponseWriter, r *http.Request) {
 	}
 	delete(store.Exoplanets, id)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func FuelEstimation(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["id"]
+	store.RLock()
+	defer store.RUnlock()
+	exoplanet, ok := store.Exoplanets[id]
+	if !ok {
+		respondWithError(w, http.StatusNotFound, models.ErrNotFound.Error())
+		return
+	}
+	crewCapacityStr := r.URL.Query().Get("crew")
+	crewCapacity, err := strconv.Atoi(crewCapacityStr)
+	if err != nil || crewCapacity <= 0 {
+		respondWithError(w, http.StatusBadRequest, "Invalid Crew capacity")
+		return
+	}
+	fuelCost, err := utils.CalculateFuel(exoplanet, crewCapacity)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	response := map[string]float64{"fuel_cost": fuelCost}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+
 }
