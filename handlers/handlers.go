@@ -6,6 +6,7 @@ import (
 
 	"github.com/Kratos-28/ExoPlanet/models"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 var store = models.NewExoPlanetStore()
@@ -46,6 +47,7 @@ func AddExoPlanet(w http.ResponseWriter, r *http.Request) {
 
 	if err := validateExoplanet(&exoplanet); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid exoplanet data")
+		return
 	}
 	exoplanet.ID = uuid.NewString()
 	store.Lock()
@@ -54,4 +56,73 @@ func AddExoPlanet(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(exoplanet)
+}
+
+func ListExoPlanets(w http.ResponseWriter, r *http.Request) {
+	store.RLock()
+	defer store.RUnlock()
+	exoplanets := make([]models.Exoplanet, 0, len(store.Exoplanets))
+	for _, planet := range store.Exoplanets {
+		exoplanets = append(exoplanets, planet)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(exoplanets)
+
+}
+
+func GetExoPlanetByID(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["id"]
+	store.RLock()
+	defer store.RUnlock()
+	exoplanet, ok := store.Exoplanets[id]
+	if !ok {
+		respondWithError(w, http.StatusNotFound, models.ErrNotFound.Error())
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(exoplanet)
+}
+
+func UpdateExoPlanet(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["id"]
+
+	var exoplanet models.Exoplanet
+
+	if err := json.NewDecoder(r.Body).Decode(&exoplanet); err != nil {
+		respondWithError(w, http.StatusBadRequest, "invalid request payload")
+		return
+	}
+
+	if err := validateExoplanet(&exoplanet); err != nil {
+		respondWithError(w, http.StatusBadRequest, "invalid exoplanet data")
+		return
+	}
+	store.Lock()
+	defer store.Unlock()
+	_, ok := store.Exoplanets[id]
+	if !ok {
+		respondWithError(w, http.StatusNotFound, models.ErrNotFound.Error())
+		return
+	}
+	exoplanet.ID = id
+	store.Exoplanets[id] = exoplanet
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(exoplanet)
+}
+
+func DeleteExoPlanet(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["id"]
+
+	store.Lock()
+	defer store.Unlock()
+	if _, ok := store.Exoplanets[id]; !ok {
+		respondWithError(w, http.StatusNotFound, models.ErrNotFound.Error())
+		return
+	}
+	delete(store.Exoplanets, id)
+	w.WriteHeader(http.StatusNoContent)
 }
