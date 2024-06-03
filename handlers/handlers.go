@@ -66,7 +66,6 @@ func ListExoPlanets(w http.ResponseWriter, r *http.Request) {
 	exoplanets := make([]models.Exoplanet, 0, len(store.Exoplanets))
 	for _, planet := range store.Exoplanets {
 		exoplanets = append(exoplanets, planet)
-		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(exoplanets)
@@ -81,7 +80,6 @@ func GetExoPlanetByID(w http.ResponseWriter, r *http.Request) {
 	exoplanet, ok := store.Exoplanets[id]
 	if !ok {
 		respondWithError(w, http.StatusNotFound, models.ErrNotFound.Error())
-		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(exoplanet)
